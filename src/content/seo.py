@@ -1,0 +1,101 @@
+import json
+import os
+from dataclasses import dataclass
+
+from src.config import config
+from src.content.writer import ArticleDraft
+from src.utils.helpers import retry_with_backoff
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+@dataclass
+class SEOMetadata:
+    seo_title: str
+    medium_title: str
+    subtitle: str
+    tags: list[str]
+    canonical_topic: str
+    meta_description: str
+
+
+class SEOOptimizer:
+    def optimize(self, draft: ArticleDraft) -> SEOMetadata:
+        prompt = self._load_prompt("seo.txt")
+        prompt = prompt.format(
+            title=draft.title,
+            subtitle=draft.subtitle,
+            content=draft.content[:3000],
+            word_count=draft.word_count
+        )
+
+        response = self._call_llm(prompt)
+        return self._parse_response(response, draft)
+
+    def _load_prompt(self, filename: str) -> str:
+        path = os.path.join("prompts", filename)
+        with open(path, "r") as f:
+            return f.read()
+
+    @retry_with_backoff(max_attempts=3, base_delay=2.0)
+    def _call_llm(self, prompt: str) -> str:
+        provider = config.llm_provider.lower()
+        if provider == "openai":
+            return self._call_openai(prompt)
+        elif provider == "anthropic":
+            return self._call_anthropic(prompt)
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")
+
+    def _call_openai(self, prompt: str) -> str:
+        import openai
+        client = openai.OpenAI(api_key=config.llm_api_key)
+        response = client.chat.completions.create(
+            model=config.llm_model,
+            messages=[
+                {"role": "system", "content": "You are an SEO expert who creates compelling, search-optimized titles and metadata for technical articles on Medium."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.5,
+            max_tokens=1500,
+        )
+        return response.choices[0].message.content
+
+    def _call_anthropic(self, prompt: str) -> str:
+        import anthropic
+        client = anthropic.Anthropic(api_key=config.llm_api_key)
+        response = client.messages.create(
+            model=config.llm_model,
+            max_tokens=1500,
+            temperature=0.5,
+            system="You are an SEO expert who creates compelling, search-optimized titles and metadata for technical articles on Medium.",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.content[0].text
+
+    def _parse_response(self, response: str, draft: ArticleDraft) -> SEOMetadata:
+        try:
+            start = response.find("{")
+            end = response.rfind("}") + 1
+            if start >= 0 and end > start:
+                data = json.loads(response[start:end])
+                return SEOMetadata(
+                    seo_title=data.get("seo_title", ""),
+                    medium_title=data.get("medium_title", ""),
+                    subtitle=data.get("subtitle", ""),
+                    tags=data.get("tags", []),
+                    canonical_topic=data.get("canonical_topic", ""),
+                    meta_description=data.get("meta_description", "")
+                )
+        except json.JSONDecodeError:
+            pass
+
+        return SEOMetadata(
+            seo_title=draft.title,
+            medium_title=draft.title,
+            subtitle=draft.subtitle,
+            tags=["software engineering", "programming", "technology"],
+            canonical_topic="Technology",
+            meta_description=draft.subtitle[:160]
+        )

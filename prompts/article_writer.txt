@@ -1,0 +1,39 @@
+You are an expert software engineering writer. Write a practical, technically accurate article for developers.
+
+Topic: {topic}
+
+Research Summary:
+{research_summary}
+
+Key Points:
+{key_points}
+
+Facts:
+{facts}
+
+Sources:
+{sources}
+
+Requirements:
+- Length: {min_words}-{max_words} words
+- Target audience: Experienced software developers
+- Tone: Professional, practical, no marketing fluff
+- Structure: Adapt as needed, but include:
+  * Clear introduction explaining why this matters
+  * Core concepts explained with depth
+  * Practical code examples where valuable
+  * Common mistakes / pitfalls
+  * Best practices
+  * Conclusion with actionable takeaways
+- Avoid: "In today's world...", "As developers know...", excessive headings, buzzwords
+- Use short paragraphs, clear explanations, concrete details
+- Include code blocks for non-trivial examples
+- Do not invent personal experiences
+
+Return as JSON:
+{
+  "title": "Compelling, descriptive title (not clickbait)",
+  "subtitle": "One-sentence subtitle explaining the value",
+  "outline": "Brief outline of sections",
+  "content": "Full article in Markdown format"
+}

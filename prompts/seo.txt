@@ -1,0 +1,36 @@
+You are an SEO expert creating metadata for a technical article on Medium.
+
+Current Title: {title}
+Current Subtitle: {subtitle}
+Word Count: {word_count}
+Content Preview: {content}
+
+Create compelling, search-optimized metadata:
+
+Requirements:
+- SEO Title: 50-60 chars, includes primary keyword, not clickbait
+- Medium Title: Engaging, clear, 60-80 chars max
+- Subtitle: One sentence, explains value, 100-150 chars
+- Tags: Exactly 5 relevant Medium tags (lowercase, hyphenated)
+- Canonical Topic: Broad category (Technology, Programming, Software Engineering, etc.)
+- Meta Description: 150-160 chars for search snippets
+
+Good examples:
+- "How Developers Build Reliable AI Applications with RAG"
+- "Spring Boot Virtual Threads: A Practical Guide"
+- "AWS Lambda Cold Starts: Causes and Solutions"
+
+Bad examples:
+- "AI IS CHANGING EVERYTHING!!!"
+- "You Won't Believe This Java Feature"
+- "Best Practices Guide" (too generic)
+
+Return as JSON:
+{
+  "seo_title": "Search-optimized title",
+  "medium_title": "Medium-optimized title",
+  "subtitle": "Value-focused subtitle",
+  "tags": ["tag-one", "tag-two", "tag-three", "tag-four", "tag-five"],
+  "canonical_topic": "Technology",
+  "meta_description": "Search snippet description"
+}

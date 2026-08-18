@@ -1,0 +1,138 @@
+name: Daily Medium Publisher
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run in dry-run mode (no publishing)"
+        required: false
+        default: "false"
+        type: boolean
+      topic:
+        description: "Manual topic to publish"
+        required: false
+        type: string
+
+env:
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+  LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
+  LLM_MODEL: ${{ secrets.LLM_MODEL }}
+  SEARCH_API_KEY: ${{ secrets.SEARCH_API_KEY }}
+  SEARCH_PROVIDER: ${{ secrets.SEARCH_PROVIDER }}
+  MEDIUM_TOKEN: ${{ secrets.MEDIUM_TOKEN }}
+  MEDIUM_PUBLICATION_ID: ${{ secrets.MEDIUM_PUBLICATION_ID }}
+  ARTICLES_PER_DAY: ${{ secrets.ARTICLES_PER_DAY }}
+  MIN_ARTICLE_WORDS: ${{ secrets.MIN_ARTICLE_WORDS }}
+  MAX_ARTICLE_WORDS: ${{ secrets.MAX_ARTICLE_WORDS }}
+  CONTENT_CATEGORIES: ${{ secrets.CONTENT_CATEGORIES }}
+  ENABLE_RESEARCH: ${{ secrets.ENABLE_RESEARCH }}
+  ENABLE_FACT_CHECK: ${{ secrets.ENABLE_FACT_CHECK }}
+  ENABLE_DUPLICATE_CHECK: ${{ secrets.ENABLE_DUPLICATE_CHECK }}
+  DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+  DATABASE_PATH: data/articles.db
+  LOG_LEVEL: INFO
+  RETRY_ATTEMPTS: 3
+  RETRY_BASE_DELAY: 2.0
+
+jobs:
+  publish:
+    name: Publish Daily Article
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create data directory
+        run: mkdir -p data logs output
+
+      - name: Validate configuration
+        run: python -m src.main --config-check
+
+      - name: Run pipeline
+        id: pipeline
+        run: |
+          if [ "${{ github.event.inputs.topic }}" != "" ]; then
+            python -m src.main --topic "${{ github.event.inputs.topic }}"
+          elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python -m src.main --dry-run
+          else
+            python -m src.main
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-logs
+          path: |
+            logs/
+            output/
+          retention-days: 30
+
+      - name: Upload database
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: articles-database
+          path: data/articles.db
+          retention-days: 90
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Daily Publish Failed: ${new Date().toISOString().split('T')[0]}`,
+              body: `The daily Medium publishing pipeline failed.\n\n**Workflow:** ${context.workflow}\n**Run:** ${context.runId}\n**Error:** Check the workflow logs for details.\n\n<details>\n<summary>Recent logs</summary>\n\n\`\`\`\n${require('fs').readFileSync('logs/pipeline.log', 'utf8').slice(-5000)}\n\`\`\`\n\n</details>`,
+              labels: ['pipeline-failure', 'automated']
+            })
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-mock
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          retention-days: 7

@@ -1,0 +1,22 @@
+You are an expert technical content strategist for software developers. Generate {count} article topics for a daily Medium publication targeting software engineers and technology professionals.
+
+Categories: {categories}
+
+Recent topics (avoid duplicates):
+{recent_topics}
+
+Requirements:
+1. Topics must be practical and useful for developers
+2. Prefer "how-to", tutorials, deep-dives, best practices, patterns
+3. Avoid generic overviews, news summaries, opinion pieces
+4. Each topic should have reliable sources available (official docs, GitHub, etc.)
+5. Topics should have search potential and long-term value
+
+Return as JSON array:
+[
+  {
+    "topic": "Specific article topic",
+    "category": "Category from list",
+    "reasoning": "Why this topic scores well on relevance, interest, search potential, usefulness, originality"
+  }
+]
