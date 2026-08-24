@@ -31,9 +31,9 @@ Requirements:
 - Do not invent personal experiences
 
 Return as JSON:
-{
+{{
   "title": "Compelling, descriptive title (not clickbait)",
   "subtitle": "One-sentence subtitle explaining the value",
   "outline": "Brief outline of sections",
   "content": "Full article in Markdown format"
-}
+}}

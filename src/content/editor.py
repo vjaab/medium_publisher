@@ -54,6 +54,8 @@ class ArticleEditor:
             return self._call_openai(prompt)
         elif provider == "anthropic":
             return self._call_anthropic(prompt)
+        elif provider == "gemini":
+            return self._call_gemini(prompt)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
 
@@ -83,20 +85,44 @@ class ArticleEditor:
         )
         return response.content[0].text
 
+    def _call_gemini(self, prompt: str) -> str:
+        import google.generativeai as genai
+        genai.configure(api_key=config.llm_api_key)
+        model = genai.GenerativeModel(config.llm_model)
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.2,
+                max_output_tokens=8192,
+            )
+        )
+        return response.text
+
     def _parse_response(self, response: str) -> ReviewResult:
-        try:
-            start = response.find("{")
-            end = response.rfind("}") + 1
+        import re
+
+        def try_parse_json(text: str):
+            start = text.find("{")
+            end = text.rfind("}") + 1
             if start >= 0 and end > start:
-                data = json.loads(response[start:end])
-                return ReviewResult(
-                    passed=data.get("passed", False),
-                    issues=data.get("issues", []),
-                    suggestions=data.get("suggestions", []),
-                    score=data.get("score", 0.0)
-                )
-        except json.JSONDecodeError:
-            pass
+                return json.loads(text[start:end])
+            return None
+
+        data = try_parse_json(response)
+        if data is None:
+            cleaned = re.sub(r",\s*([}\]])", r"\1", response)
+            data = try_parse_json(cleaned)
+        if data is None:
+            cleaned = re.sub(r'([{,])\s*(\w+)\s*:', r'\1"\2":', response)
+            data = try_parse_json(cleaned)
+
+        if data is not None:
+            return ReviewResult(
+                passed=data.get("passed", False),
+                issues=data.get("issues", []),
+                suggestions=data.get("suggestions", []),
+                score=data.get("score", 0.0)
+            )
 
         passed = "PASSED" in response.upper() or "PASS" in response.upper()
         issues = []

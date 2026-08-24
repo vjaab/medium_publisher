@@ -26,11 +26,11 @@ Bad examples:
 - "Best Practices Guide" (too generic)
 
 Return as JSON:
-{
+{{
   "seo_title": "Search-optimized title",
   "medium_title": "Medium-optimized title",
   "subtitle": "Value-focused subtitle",
   "tags": ["tag-one", "tag-two", "tag-three", "tag-four", "tag-five"],
   "canonical_topic": "Technology",
   "meta_description": "Search snippet description"
-}
+}}

@@ -23,13 +23,13 @@ Review for:
 8. Completeness - Promised topics not covered?
 
 Return as JSON:
-{
+{{
   "passed": true/false,
   "score": 0.0-1.0,
   "issues": [
-    {"type": "critical|major|minor", "description": "Specific issue", "location": "section or quote"}
+    {{"type": "critical|major|minor", "description": "Specific issue", "location": "section or quote"}}
   ],
   "suggestions": ["Improvement suggestion 1", ...]
-}
+}}
 
 Only pass if NO critical issues and score >= 0.7. Be strict - this protects readers.

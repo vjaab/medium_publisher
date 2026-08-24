@@ -14,9 +14,9 @@ Requirements:
 
 Return as JSON array:
 [
-  {
+  {{
     "topic": "Specific article topic",
     "category": "Category from list",
     "reasoning": "Why this topic scores well on relevance, interest, search potential, usefulness, originality"
-  }
+  }}
 ]
